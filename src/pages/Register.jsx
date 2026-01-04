@@ -63,7 +63,7 @@ export default function Register() {
       return;
     }
 
-    navigate("/registered");
+    navigate(`/registered?email=${encodeURIComponent(form.email)}`);
   };
 
   return (

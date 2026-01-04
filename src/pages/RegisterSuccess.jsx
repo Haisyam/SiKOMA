@@ -1,8 +1,44 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { MailCheck } from "lucide-react";
+import { supabase } from "../lib/supabase.js";
+import { swalBase, toast } from "../lib/alerts.js";
 
 export default function RegisterSuccess() {
+  const [searchParams] = useSearchParams();
+  const [email, setEmail] = useState(searchParams.get("email") || "");
+  const [sending, setSending] = useState(false);
+
+  const handleResend = async () => {
+    if (!email) {
+      await swalBase.fire({
+        icon: "warning",
+        title: "Email belum diisi",
+        text: "Masukkan email yang kamu daftarkan.",
+      });
+      return;
+    }
+
+    setSending(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+    });
+    setSending(false);
+
+    if (error) {
+      await swalBase.fire({
+        icon: "error",
+        title: "Gagal kirim ulang",
+        text: error.message,
+      });
+      return;
+    }
+
+    toast.fire({ icon: "success", title: "Email verifikasi dikirim ulang" });
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
       <motion.div
@@ -19,8 +55,42 @@ export default function RegisterSuccess() {
           Pendaftaran Berhasil
         </h1>
         <p className="mt-3 text-sm text-slate-400">
-          Cek email kamu untuk verifikasi sebelum bisa login.
+          Sebelum login, kamu wajib verifikasi email dulu.
         </p>
+
+        <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-left text-sm text-slate-300">
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+            Langkah berikutnya
+          </p>
+          <ol className="mt-3 list-decimal space-y-2 pl-5 text-slate-300">
+            <li>Buka inbox email yang kamu daftarkan.</li>
+            <li>Cari email dari SIKOMA (cek folder Spam/Promotions).</li>
+            <li>Klik tombol verifikasi di email tersebut.</li>
+            <li>Setelah berhasil, kembali ke halaman login.</li>
+          </ol>
+        </div>
+
+        <div className="mt-5 space-y-3 text-left">
+          <label className="block text-xs uppercase tracking-[0.2em] text-slate-400">
+            Kirim ulang verifikasi
+          </label>
+          <input
+            className="input-field"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="nama@email.com"
+          />
+          <button
+            type="button"
+            onClick={handleResend}
+            className="btn-secondary w-full"
+            disabled={sending}
+          >
+            {sending ? "Mengirim..." : "Kirim Ulang Email Verifikasi"}
+          </button>
+        </div>
+
         <div className="mt-6 flex flex-col gap-3">
           <Link className="btn-primary w-full" to="/login">
             Ke Halaman Login
