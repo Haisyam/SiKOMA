@@ -11,6 +11,7 @@ import { AnimatePresence } from "framer-motion";
 import { supabase } from "./lib/supabase.js";
 import { ThemeProvider } from "./lib/theme.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import AdminRoute from "./components/AdminRoute.jsx";
 import LoadingScreen from "./components/LoadingScreen.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
@@ -18,6 +19,7 @@ import RegisterSuccess from "./pages/RegisterSuccess.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import AppPage from "./pages/App.jsx";
+import Admin from "./pages/Admin.jsx";
 
 function AnimatedRoutes({ session, loading }) {
   const location = useLocation();
@@ -43,6 +45,14 @@ function AnimatedRoutes({ session, loading }) {
             <ProtectedRoute session={session} loading={loading}>
               <AppPage session={session} />
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute session={session} loading={loading}>
+              <Admin session={session} />
+            </AdminRoute>
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />

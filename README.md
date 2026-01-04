@@ -99,6 +99,7 @@ Buat file `.env` di root:
 ```
 VITE_SUPABASE_URL=YOUR_SUPABASE_URL
 VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+VITE_ADMIN_EMAILS=admin1@email.com,admin2@email.com
 ```
 
 ### 4) Konfigurasi Auth Redirect (Supabase)
@@ -250,6 +251,32 @@ npm run dev
 ```
 
 Akses di `http://localhost:5173`.
+
+## Admin Panel (Super Admin)
+
+Admin panel aman menggunakan **Supabase Edge Functions** (server-side). Hanya email yang ada di allowlist yang bisa mengakses.
+
+### 1) Set Secrets untuk Edge Function
+
+Jalankan via Supabase CLI:
+
+```bash
+supabase secrets set SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
+supabase secrets set ADMIN_EMAILS=admin1@email.com,admin2@email.com
+```
+
+Catatan: Supabase **melarang** membuat secret dengan prefix `SUPABASE_`. `SUPABASE_URL` sudah tersedia otomatis di Edge Functions, jadi cukup set `SERVICE_ROLE_KEY` dan `ADMIN_EMAILS`.
+
+### 2) Deploy Functions
+
+```bash
+supabase functions deploy admin-users
+supabase functions deploy admin-transactions
+```
+
+### 3) Akses Admin
+
+Buka `https://your-domain.com/admin` setelah login dengan email admin.
 
 ## Kustomisasi Branding / SEO
 

@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Key, LogOut, Menu, Shapes, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ChevronDown, Key, LogOut, Menu, ShieldCheck, Shapes, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import ThemeToggle from "./ThemeToggle.jsx";
 import { useTheme } from "../lib/theme.jsx";
+import { isAdminEmail } from "../lib/admin.js";
 
 export default function Navbar({
   userEmail,
@@ -84,6 +86,7 @@ export default function Navbar({
   const panelTransition = reduceMotion
     ? { duration: 0 }
     : { type: "tween", duration: 0.22, ease: [0.4, 0, 0.2, 1] };
+  const isAdmin = isAdminEmail(userEmail);
 
 
   const handleAddCategory = () => {
@@ -145,6 +148,12 @@ export default function Navbar({
                   transition={{ duration: 0.16 }}
                   className="glass-panel absolute right-0 mt-3 w-56 rounded-2xl p-2"
                 >
+                  {isAdmin && (
+                    <Link to="/admin" className="menu-item">
+                      <ShieldCheck className="h-4 w-4" />
+                      Admin Panel
+                    </Link>
+                  )}
                   <button
                     type="button"
                     onClick={handleAddCategory}
@@ -235,6 +244,12 @@ export default function Navbar({
 
               <div className="flex flex-col gap-3">
                 <ThemeToggle showLabel className="w-full justify-between" />
+                {isAdmin && (
+                  <Link to="/admin" className="menu-item">
+                    <ShieldCheck className="h-4 w-4" />
+                    Admin Panel
+                  </Link>
+                )}
                 <motion.button
                   whileTap={{ scale: 0.96 }}
                   onClick={handleAddCategory}
