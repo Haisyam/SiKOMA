@@ -30,7 +30,7 @@ export default function Login() {
       await swalBase.fire({
         icon: "error",
         title: "Login gagal",
-        text: error.message,
+        text: "Email atau password salah. Jika belum punya akun, silakan daftar dulu.",
       });
       return;
     }
@@ -107,14 +107,14 @@ export default function Login() {
         </form>
 
         <div className="mt-6 text-center">
-          <Link className="text-sm text-cyan-300 hover:text-cyan-200" to="/forgot-password">
+          <Link className="text-sm link-accent" to="/forgot-password">
             Lupa password?
           </Link>
         </div>
 
         <p className="mt-4 text-center text-sm text-slate-400">
           Belum punya akun?{" "}
-          <Link className="text-cyan-300 hover:text-cyan-200" to="/register">
+          <Link className="link-accent" to="/register">
             Daftar sekarang
           </Link>
         </p>
