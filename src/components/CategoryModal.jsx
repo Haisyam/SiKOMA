@@ -96,8 +96,8 @@ export default function CategoryModal({ isOpen, onClose, onSave, saving }) {
                       onChange={handleChange}
                       className="select-field pl-10"
                     >
-                      <option value="expense">Expense</option>
-                      <option value="income">Income</option>
+                      <option value="expense">Pengeluaran</option>
+                      <option value="income">Pemasukan</option>
                     </select>
                   </div>
                 </div>

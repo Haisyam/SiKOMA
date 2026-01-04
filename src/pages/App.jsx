@@ -6,6 +6,7 @@ import {
   FileSpreadsheet,
   FileText,
   Filter,
+  PlusCircle,
   Search,
   Sparkles,
   TrendingDown,
@@ -74,7 +75,8 @@ const getMonthInfo = (date) => {
 };
 
 const seedPromises = new Map();
-const getCategoryKey = (category) => `${category.name.toLowerCase()}::${category.type}`;
+const getCategoryKey = (category) =>
+  `${category.name.toLowerCase()}::${category.type}`;
 
 export default function AppPage({ session }) {
   const user = session?.user;
@@ -164,7 +166,9 @@ export default function AppPage({ session }) {
           ...category,
           user_id: userId,
         }));
-        const { error: insertError } = await supabase.from("categories").insert(payload);
+        const { error: insertError } = await supabase
+          .from("categories")
+          .insert(payload);
         if (insertError) {
           seedPromises.delete(userId);
         }
@@ -233,7 +237,10 @@ export default function AppPage({ session }) {
     const daysPassed = today.getDate();
     const averageDaily = stats.expenseMonth / daysPassed;
     if (!averageDaily) return null;
-    const daysLeft = Math.max(0, Math.floor(stats.remainingMonth / averageDaily));
+    const daysLeft = Math.max(
+      0,
+      Math.floor(stats.remainingMonth / averageDaily)
+    );
     const estimate = new Date(today);
     estimate.setDate(today.getDate() + daysLeft);
     return estimate.toLocaleDateString("id-ID", {
@@ -248,23 +255,36 @@ export default function AppPage({ session }) {
     const todayKey = new Date().toISOString().slice(0, 10);
 
     return transactions.filter((transaction) => {
-      if (filters.type !== "all" && transaction.type !== filters.type) return false;
-      if (filters.category !== "all" && transaction.category_id !== filters.category) {
+      if (filters.type !== "all" && transaction.type !== filters.type)
+        return false;
+      if (
+        filters.category !== "all" &&
+        transaction.category_id !== filters.category
+      ) {
         return false;
       }
 
-      if (filters.date === "today" && transaction.transaction_date !== todayKey) {
+      if (
+        filters.date === "today" &&
+        transaction.transaction_date !== todayKey
+      ) {
         return false;
       }
 
-      if (filters.date === "month" && !transaction.transaction_date?.startsWith(monthKey)) {
+      if (
+        filters.date === "month" &&
+        !transaction.transaction_date?.startsWith(monthKey)
+      ) {
         return false;
       }
 
       if (filters.date === "custom") {
         const start = filters.customStart || "0000-00-00";
         const end = filters.customEnd || "9999-12-31";
-        if (transaction.transaction_date < start || transaction.transaction_date > end) {
+        if (
+          transaction.transaction_date < start ||
+          transaction.transaction_date > end
+        ) {
           return false;
         }
       }
@@ -284,7 +304,8 @@ export default function AppPage({ session }) {
       const date = toLocalDate(transaction.transaction_date);
       if (Number.isNaN(date.getTime())) return;
 
-      const info = recapMode === "week" ? getWeekInfo(date) : getMonthInfo(date);
+      const info =
+        recapMode === "week" ? getWeekInfo(date) : getMonthInfo(date);
       const entry = map.get(info.key) || {
         label: info.label,
         income: 0,
@@ -399,9 +420,15 @@ export default function AppPage({ session }) {
       return;
     }
 
-    const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "pt",
+      format: "a4",
+    });
     const title =
-      recapMode === "week" ? "SIKOMA — Rekap Mingguan" : "SIKOMA — Rekap Bulanan";
+      recapMode === "week"
+        ? "SIKOMA — Rekap Mingguan"
+        : "SIKOMA — Rekap Bulanan";
     const printDate = new Date().toLocaleDateString("id-ID", {
       day: "numeric",
       month: "long",
@@ -429,7 +456,9 @@ export default function AppPage({ session }) {
       });
     }
 
-    const startY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 20 : 90;
+    const startY = doc.lastAutoTable?.finalY
+      ? doc.lastAutoTable.finalY + 20
+      : 90;
     autoTable(doc, {
       startY,
       head: [["Tanggal", "Tipe", "Kategori", "Deskripsi", "Nominal"]],
@@ -445,7 +474,9 @@ export default function AppPage({ session }) {
       columnStyles: { 3: { cellWidth: 160 } },
     });
 
-    doc.save(`sikoma-${recapMode}-rekap-${new Date().toISOString().slice(0, 10)}.pdf`);
+    doc.save(
+      `sikoma-${recapMode}-rekap-${new Date().toISOString().slice(0, 10)}.pdf`
+    );
     toast.fire({ icon: "success", title: "File .pdf berhasil diunduh" });
   };
 
@@ -473,7 +504,9 @@ export default function AppPage({ session }) {
       return;
     }
 
-    setCategories((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+    setCategories((prev) =>
+      [...prev, data].sort((a, b) => a.name.localeCompare(b.name))
+    );
     setIsCategoryOpen(false);
     toast.fire({ icon: "success", title: "Kategori baru ditambahkan" });
   };
@@ -568,7 +601,10 @@ export default function AppPage({ session }) {
 
     if (!result.isConfirmed) return;
 
-    const { error } = await supabase.from("transactions").delete().eq("id", transaction.id);
+    const { error } = await supabase
+      .from("transactions")
+      .delete()
+      .eq("id", transaction.id);
 
     if (error) {
       await swalBase.fire({
@@ -579,7 +615,9 @@ export default function AppPage({ session }) {
       return;
     }
 
-    setTransactions((prev) => prev.filter((item) => item.id !== transaction.id));
+    setTransactions((prev) =>
+      prev.filter((item) => item.id !== transaction.id)
+    );
     toast.fire({ icon: "success", title: "Transaksi berhasil dihapus" });
   };
 
@@ -674,14 +712,28 @@ export default function AppPage({ session }) {
                 Dashboard Keuangan
               </h2>
             </div>
-            <div className="glass-panel flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-slate-300">
-              <CalendarClock className="h-4 w-4 text-cyan-300" />
-              {new Date().toLocaleDateString("id-ID", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
+            <div className="flex items-center gap-3">
+              <div className="glass-panel flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-slate-300">
+                <CalendarClock className="h-4 w-4 text-cyan-300" />
+                {new Date().toLocaleDateString("id-ID", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                onClick={() => {
+                  setEditing(null);
+                  setIsTransactionOpen(true);
+                }}
+                className="btn-primary whitespace-nowrap"
+                type="button"
+              >
+                <PlusCircle className="h-4 w-4" />
+                Catat Transaksi
+              </motion.button>
             </div>
           </div>
 
@@ -698,7 +750,9 @@ export default function AppPage({ session }) {
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
                   Estimasi Uang Habis
                 </p>
-                <h3 className="text-lg font-semibold text-slate-100">Prediksi</h3>
+                <h3 className="text-lg font-semibold text-slate-100">
+                  Prediksi
+                </h3>
               </div>
             </div>
             <p className="text-sm text-slate-300">
@@ -717,7 +771,9 @@ export default function AppPage({ session }) {
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
                   Saldo Bulanan
                 </p>
-                <h3 className="text-lg font-semibold text-slate-100">Sisa Saat Ini</h3>
+                <h3 className="text-lg font-semibold text-slate-100">
+                  Sisa Saat Ini
+                </h3>
               </div>
             </div>
             <p className="text-2xl font-semibold text-rose-200">
@@ -756,7 +812,9 @@ export default function AppPage({ session }) {
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-sm text-slate-300">Kategori</label>
+              <label className="mb-2 block text-sm text-slate-300">
+                Kategori
+              </label>
               <select
                 name="category"
                 value={filters.category}
@@ -774,7 +832,9 @@ export default function AppPage({ session }) {
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-sm text-slate-300">Tanggal</label>
+              <label className="mb-2 block text-sm text-slate-300">
+                Tanggal
+              </label>
               <select
                 name="date"
                 value={filters.date}
@@ -787,7 +847,9 @@ export default function AppPage({ session }) {
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-sm text-slate-300">Search</label>
+              <label className="mb-2 block text-sm text-slate-300">
+                Search
+              </label>
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
@@ -804,7 +866,9 @@ export default function AppPage({ session }) {
           {filters.date === "custom" && (
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-2 block text-sm text-slate-300">Dari</label>
+                <label className="mb-2 block text-sm text-slate-300">
+                  Dari
+                </label>
                 <input
                   type="date"
                   name="customStart"
@@ -814,7 +878,9 @@ export default function AppPage({ session }) {
                 />
               </div>
               <div>
-                <label className="mb-2 block text-sm text-slate-300">Sampai</label>
+                <label className="mb-2 block text-sm text-slate-300">
+                  Sampai
+                </label>
                 <input
                   type="date"
                   name="customEnd"
@@ -831,7 +897,10 @@ export default function AppPage({ session }) {
           {loading ? (
             <Charts expenseByCategory={[]} dailyExpense={[]} />
           ) : (
-            <Charts expenseByCategory={expenseByCategory} dailyExpense={dailyExpense} />
+            <Charts
+              expenseByCategory={expenseByCategory}
+              dailyExpense={dailyExpense}
+            />
           )}
         </section>
 
@@ -956,7 +1025,9 @@ export default function AppPage({ session }) {
               <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
                 Riwayat
               </p>
-              <h3 className="text-lg font-semibold text-slate-100">Transaksi Terbaru</h3>
+              <h3 className="text-lg font-semibold text-slate-100">
+                Transaksi Terbaru
+              </h3>
             </div>
           </div>
 
@@ -967,7 +1038,9 @@ export default function AppPage({ session }) {
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10">
                 <Sparkles className="h-6 w-6 text-cyan-200" />
               </div>
-              <h4 className="text-lg font-semibold text-slate-100">Belum ada transaksi</h4>
+              <h4 className="text-lg font-semibold text-slate-100">
+                Belum ada transaksi
+              </h4>
               <p className="text-sm text-slate-400">
                 Mulai catat pemasukan & pengeluaran pertama kamu hari ini.
               </p>

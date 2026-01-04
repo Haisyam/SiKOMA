@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Key, LogOut, Menu, PlusCircle, Shapes, X } from "lucide-react";
+import { ChevronDown, Key, LogOut, Menu, Shapes, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import ThemeToggle from "./ThemeToggle.jsx";
 import { useTheme } from "../lib/theme.jsx";
@@ -85,10 +85,6 @@ export default function Navbar({
     ? { duration: 0 }
     : { type: "tween", duration: 0.22, ease: [0.4, 0, 0.2, 1] };
 
-  const handleAddTransaction = () => {
-    setIsOpen(false);
-    onAddTransaction?.();
-  };
 
   const handleAddCategory = () => {
     setIsOpen(false);
@@ -173,15 +169,6 @@ export default function Navbar({
               )}
             </AnimatePresence>
           </div>
-          <motion.button
-            whileTap={{ scale: 0.96 }}
-            onClick={handleAddTransaction}
-            className="btn-primary btn-compact"
-            type="button"
-          >
-            <PlusCircle className="h-4 w-4" />
-            Tambah Transaksi
-          </motion.button>
         </div>
       </div>
 
@@ -265,15 +252,6 @@ export default function Navbar({
                 >
                   <Key className="h-4 w-4" />
                   Reset Password
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.96 }}
-                  onClick={handleAddTransaction}
-                  className="btn-primary w-full"
-                  type="button"
-                >
-                  <PlusCircle className="h-4 w-4" />
-                  Tambah Transaksi
                 </motion.button>
                 <motion.button
                   whileTap={{ scale: 0.96 }}
