@@ -2,12 +2,18 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   CalendarClock,
+  CalendarRange,
+  FileSpreadsheet,
+  FileText,
   Filter,
   Search,
   Sparkles,
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
+import { utils, writeFile } from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { supabase } from "../lib/supabase.js";
 import { swalBase, toast } from "../lib/alerts.js";
 import Navbar from "../components/Navbar.jsx";
@@ -38,6 +44,35 @@ const getMonthKey = (date) => {
   return `${date.getFullYear()}-${month}`;
 };
 
+const toLocalDate = (value) => new Date(`${value}T00:00:00`);
+
+const getWeekInfo = (date) => {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const day = date.getDate();
+  const weekIndex = Math.floor((day - 1) / 7) + 1;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const start = (weekIndex - 1) * 7 + 1;
+  const end = Math.min(start + 6, daysInMonth);
+  const monthName = date.toLocaleDateString("id-ID", { month: "short" });
+  return {
+    key: `${year}-${String(month + 1).padStart(2, "0")}-W${weekIndex}`,
+    label: `Minggu ${weekIndex} (${start}-${end} ${monthName} ${year})`,
+    order: year * 1000 + (month + 1) * 10 + weekIndex,
+  };
+};
+
+const getMonthInfo = (date) => {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const monthName = date.toLocaleDateString("id-ID", { month: "long" });
+  return {
+    key: `${year}-${String(month + 1).padStart(2, "0")}`,
+    label: `${monthName} ${year}`,
+    order: year * 100 + (month + 1),
+  };
+};
+
 const seedPromises = new Map();
 const getCategoryKey = (category) => `${category.name.toLowerCase()}::${category.type}`;
 
@@ -59,6 +94,7 @@ export default function AppPage({ session }) {
     customStart: "",
     customEnd: "",
   });
+  const [recapMode, setRecapMode] = useState("week");
 
   const monthKey = getMonthKey(new Date());
 
@@ -240,6 +276,47 @@ export default function AppPage({ session }) {
     });
   }, [transactions, filters, monthKey]);
 
+  const recapRows = useMemo(() => {
+    const map = new Map();
+
+    filteredTransactions.forEach((transaction) => {
+      if (!transaction.transaction_date) return;
+      const date = toLocalDate(transaction.transaction_date);
+      if (Number.isNaN(date.getTime())) return;
+
+      const info = recapMode === "week" ? getWeekInfo(date) : getMonthInfo(date);
+      const entry = map.get(info.key) || {
+        label: info.label,
+        income: 0,
+        expense: 0,
+        net: 0,
+        order: info.order,
+      };
+
+      if (transaction.type === "income") {
+        entry.income += Number(transaction.amount || 0);
+      } else {
+        entry.expense += Number(transaction.amount || 0);
+      }
+      entry.net = entry.income - entry.expense;
+      map.set(info.key, entry);
+    });
+
+    return Array.from(map.values()).sort((a, b) => a.order - b.order);
+  }, [filteredTransactions, recapMode]);
+
+  const recapTotals = useMemo(() => {
+    return recapRows.reduce(
+      (acc, row) => {
+        acc.income += row.income;
+        acc.expense += row.expense;
+        acc.net += row.net;
+        return acc;
+      },
+      { income: 0, expense: 0, net: 0 }
+    );
+  }, [recapRows]);
+
   const expenseByCategory = useMemo(() => {
     const map = new Map();
     transactions
@@ -280,6 +357,97 @@ export default function AppPage({ session }) {
       .map(([label, value]) => ({ label, value }))
       .sort((a, b) => Number(a.label) - Number(b.label));
   }, [transactions, monthKey]);
+
+  const handleExportXlsx = () => {
+    if (filteredTransactions.length === 0) {
+      toast.fire({ icon: "info", title: "Tidak ada data untuk diexport" });
+      return;
+    }
+
+    const rows = filteredTransactions.map((transaction) => ({
+      Tanggal: transaction.transaction_date,
+      Tipe: transaction.type === "income" ? "Pemasukan" : "Pengeluaran",
+      Kategori: transaction.category?.name ?? "-",
+      Deskripsi: transaction.description ?? "-",
+      Nominal: Number(transaction.amount || 0),
+    }));
+
+    const recap = recapRows.map((row) => ({
+      Periode: row.label,
+      Pemasukan: row.income,
+      Pengeluaran: row.expense,
+      Selisih: row.net,
+    }));
+
+    const workbook = utils.book_new();
+    const sheet = utils.json_to_sheet(rows);
+    utils.book_append_sheet(workbook, sheet, "Transaksi");
+
+    if (recap.length > 0) {
+      const recapSheet = utils.json_to_sheet(recap);
+      utils.book_append_sheet(workbook, recapSheet, "Rekap");
+    }
+
+    const dateStamp = new Date().toISOString().slice(0, 10);
+    writeFile(workbook, `sikoma-${recapMode}-rekap-${dateStamp}.xlsx`);
+    toast.fire({ icon: "success", title: "File .xlsx berhasil diunduh" });
+  };
+
+  const handleExportPdf = () => {
+    if (filteredTransactions.length === 0) {
+      toast.fire({ icon: "info", title: "Tidak ada data untuk diexport" });
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+    const title =
+      recapMode === "week" ? "SIKOMA — Rekap Mingguan" : "SIKOMA — Rekap Bulanan";
+    const printDate = new Date().toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
+    doc.setFontSize(16);
+    doc.text(title, 40, 40);
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Tanggal cetak: ${printDate}`, 40, 58);
+
+    if (recapRows.length > 0) {
+      autoTable(doc, {
+        startY: 74,
+        head: [["Periode", "Pemasukan", "Pengeluaran", "Selisih"]],
+        body: recapRows.map((row) => [
+          row.label,
+          formatCurrency(row.income),
+          formatCurrency(row.expense),
+          formatCurrency(row.net),
+        ]),
+        styles: { fontSize: 9, cellPadding: 6 },
+        headStyles: { fillColor: [34, 211, 238], textColor: 15 },
+      });
+    }
+
+    const startY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 20 : 90;
+    autoTable(doc, {
+      startY,
+      head: [["Tanggal", "Tipe", "Kategori", "Deskripsi", "Nominal"]],
+      body: filteredTransactions.map((transaction) => [
+        transaction.transaction_date,
+        transaction.type === "income" ? "Pemasukan" : "Pengeluaran",
+        transaction.category?.name ?? "-",
+        (transaction.description ?? "-").slice(0, 40),
+        formatCurrency(transaction.amount),
+      ]),
+      styles: { fontSize: 9, cellPadding: 6 },
+      headStyles: { fillColor: [15, 23, 42], textColor: 255 },
+      columnStyles: { 3: { cellWidth: 160 } },
+    });
+
+    doc.save(`sikoma-${recapMode}-rekap-${new Date().toISOString().slice(0, 10)}.pdf`);
+    toast.fire({ icon: "success", title: "File .pdf berhasil diunduh" });
+  };
 
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
@@ -659,7 +827,128 @@ export default function AppPage({ session }) {
           )}
         </section>
 
-        <section>{loading ? <Charts expenseByCategory={[]} dailyExpense={[]} /> : <Charts expenseByCategory={expenseByCategory} dailyExpense={dailyExpense} />}</section>
+        <section>
+          {loading ? (
+            <Charts expenseByCategory={[]} dailyExpense={[]} />
+          ) : (
+            <Charts expenseByCategory={expenseByCategory} dailyExpense={dailyExpense} />
+          )}
+        </section>
+
+        <section className="glass-card space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-slate-100">
+              <CalendarRange className="h-4 w-4 text-cyan-300" />
+              <h3 className="text-lg font-semibold">Rekap Transaksi</h3>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setRecapMode("week")}
+                className={`btn-ghost btn-compact ${
+                  recapMode === "week"
+                    ? "border-cyan-400/60 bg-cyan-400/10 text-cyan-200 is-active"
+                    : ""
+                }`}
+              >
+                Mingguan
+              </button>
+              <button
+                type="button"
+                onClick={() => setRecapMode("month")}
+                className={`btn-ghost btn-compact ${
+                  recapMode === "month"
+                    ? "border-cyan-400/60 bg-cyan-400/10 text-cyan-200 is-active"
+                    : ""
+                }`}
+              >
+                Bulanan
+              </button>
+              <button
+                type="button"
+                onClick={handleExportXlsx}
+                className="btn-secondary btn-compact"
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                Export XLSX
+              </button>
+              <button
+                type="button"
+                onClick={handleExportPdf}
+                className="btn-secondary btn-compact"
+              >
+                <FileText className="h-4 w-4" />
+                Export PDF
+              </button>
+            </div>
+          </div>
+
+          <p className="text-xs text-slate-400">
+            Rekap mengikuti filter yang aktif di atas.
+          </p>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="glass-panel rounded-2xl p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                Total Pemasukan
+              </p>
+              <p className="mt-2 text-lg font-semibold text-emerald-200">
+                {formatCurrency(recapTotals.income)}
+              </p>
+            </div>
+            <div className="glass-panel rounded-2xl p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                Total Pengeluaran
+              </p>
+              <p className="mt-2 text-lg font-semibold text-rose-200">
+                {formatCurrency(recapTotals.expense)}
+              </p>
+            </div>
+            <div className="glass-panel rounded-2xl p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                Selisih
+              </p>
+              <p className="mt-2 text-lg font-semibold text-slate-100">
+                {formatCurrency(recapTotals.net)}
+              </p>
+            </div>
+          </div>
+
+          {recapRows.length === 0 ? (
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-center text-sm text-slate-400">
+              Belum ada data rekap untuk periode ini.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-left text-sm text-slate-200">
+                <thead className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                  <tr>
+                    <th className="px-4 py-3">Periode</th>
+                    <th className="px-4 py-3">Pemasukan</th>
+                    <th className="px-4 py-3">Pengeluaran</th>
+                    <th className="px-4 py-3">Selisih</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/10">
+                  {recapRows.map((row) => (
+                    <tr key={row.label}>
+                      <td className="px-4 py-3 text-slate-100">{row.label}</td>
+                      <td className="px-4 py-3 text-emerald-200">
+                        {formatCurrency(row.income)}
+                      </td>
+                      <td className="px-4 py-3 text-rose-200">
+                        {formatCurrency(row.expense)}
+                      </td>
+                      <td className="px-4 py-3 text-slate-100">
+                        {formatCurrency(row.net)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
 
         <section className="space-y-4">
           <div className="flex items-center justify-between">

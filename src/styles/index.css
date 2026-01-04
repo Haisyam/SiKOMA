@@ -207,6 +207,12 @@
   background-color: rgba(15, 23, 42, 0.08);
 }
 
+:root[data-theme="light"] .btn-ghost.is-active {
+  border-color: rgba(14, 116, 144, 0.7);
+  background-color: rgba(14, 116, 144, 0.16);
+  color: #0e7490;
+}
+
 :root[data-theme="light"] .badge {
   color: #1f2937;
   border-color: rgba(15, 23, 42, 0.12);
