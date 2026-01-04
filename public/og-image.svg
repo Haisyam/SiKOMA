@@ -1,0 +1,36 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="120" y1="60" x2="1080" y2="600" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F172A" />
+      <stop offset="0.5" stop-color="#0B1F33" />
+      <stop offset="1" stop-color="#0A0F18" />
+    </linearGradient>
+    <linearGradient id="accent" x1="240" y1="180" x2="520" y2="450" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22D3EE" />
+      <stop offset="0.55" stop-color="#34D399" />
+      <stop offset="1" stop-color="#FACC15" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <circle cx="1020" cy="90" r="140" fill="#22D3EE" opacity="0.08" />
+  <circle cx="150" cy="520" r="190" fill="#FACC15" opacity="0.08" />
+
+  <g transform="translate(110 130)">
+    <rect x="0" y="0" width="320" height="320" rx="90" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.16)" stroke-width="2" />
+    <rect x="48" y="64" width="224" height="200" rx="48" fill="rgba(15,23,42,0.75)" stroke="rgba(255,255,255,0.08)" stroke-width="2" />
+    <rect x="78" y="116" width="164" height="100" rx="30" fill="rgba(15,23,42,0.9)" />
+    <rect x="98" y="136" width="124" height="60" rx="20" fill="url(#accent)" opacity="0.16" />
+    <circle cx="216" cy="166" r="11" fill="#22D3EE" />
+    <circle cx="216" cy="166" r="20" stroke="rgba(34,211,238,0.45)" stroke-width="2" />
+  </g>
+
+  <text x="480" y="250" fill="#E2E8F0" font-size="52" font-family="Poppins, system-ui, sans-serif" font-weight="600">
+    SIKOMA
+  </text>
+  <text x="480" y="310" fill="#94A3B8" font-size="26" font-family="Poppins, system-ui, sans-serif" font-weight="400">
+    Sistem Informasi Keuangan Mahasiswa
+  </text>
+  <text x="480" y="370" fill="#CBD5F5" font-size="24" font-family="Poppins, system-ui, sans-serif" font-weight="500">
+    Catat pemasukan & pengeluaran harian secara cepat, simpel, dan visual.
+  </text>
+</svg>
