@@ -732,7 +732,7 @@ export default function AppPage({ session }) {
                 type="button"
               >
                 <PlusCircle className="h-4 w-4" />
-                Catat Transaksi
+                Catat Keuangan
               </motion.button>
             </div>
           </div>
