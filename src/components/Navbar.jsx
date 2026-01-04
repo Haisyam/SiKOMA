@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Key, LogOut, Menu, PlusCircle, Shapes, X } from "lucide-react";
+import { ChevronDown, Key, LogOut, Menu, PlusCircle, Shapes, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import ThemeToggle from "./ThemeToggle.jsx";
 import { useTheme } from "../lib/theme.jsx";
@@ -12,9 +12,11 @@ export default function Navbar({
   onResetPassword,
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isActionOpen, setIsActionOpen] = useState(false);
   const { theme } = useTheme();
   const [isMobile, setIsMobile] = useState(false);
   const closeTimerRef = useRef(null);
+  const actionRef = useRef(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -61,6 +63,23 @@ export default function Navbar({
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    const handleClick = (event) => {
+      if (!actionRef.current || actionRef.current.contains(event.target)) return;
+      setIsActionOpen(false);
+    };
+    const handleKey = (event) => {
+      if (event.key === "Escape") setIsActionOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, []);
+
   const reduceMotion = theme === "light" && isMobile;
   const panelTransition = reduceMotion
     ? { duration: 0 }
@@ -101,50 +120,70 @@ export default function Navbar({
           </div>
         </div>
 
-        <div className="hidden flex-1 flex-col gap-3 sm:flex sm:flex-row sm:items-center sm:justify-end">
-          <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-300">
-            {userEmail}
-          </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
+      <div className="hidden flex-1 flex-col gap-3 sm:flex sm:flex-row sm:items-center sm:justify-end">
+        <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-300">
+          {userEmail}
+        </div>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <div ref={actionRef} className="relative">
             <motion.button
               whileTap={{ scale: 0.96 }}
-              onClick={handleAddCategory}
-              className="btn-secondary"
+              onClick={() => setIsActionOpen((prev) => !prev)}
+              className="btn-secondary btn-compact"
               type="button"
+              aria-expanded={isActionOpen}
             >
               <Shapes className="h-4 w-4" />
               Kategori
+              <ChevronDown
+                className={`h-4 w-4 transition ${isActionOpen ? "rotate-180" : ""}`}
+              />
             </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.96 }}
-              onClick={handleResetPassword}
-              className="btn-secondary"
-              type="button"
-            >
-              <Key className="h-4 w-4" />
-              Reset Password
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.96 }}
-              onClick={handleAddTransaction}
-              className="btn-primary"
-              type="button"
-            >
-              <PlusCircle className="h-4 w-4" />
-              Tambah Transaksi
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.96 }}
-              onClick={handleLogout}
-              className="btn-ghost"
-              type="button"
-            >
-              <LogOut className="h-4 w-4" />
-              Logout
-            </motion.button>
+            <AnimatePresence>
+              {isActionOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                  transition={{ duration: 0.16 }}
+                  className="glass-panel absolute right-0 mt-3 w-56 rounded-2xl p-2"
+                >
+                  <button
+                    type="button"
+                    onClick={handleAddCategory}
+                    className="menu-item"
+                  >
+                    <Shapes className="h-4 w-4" />
+                    Kelola Kategori
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResetPassword}
+                    className="menu-item"
+                  >
+                    <Key className="h-4 w-4" />
+                    Reset Password
+                  </button>
+                  <button type="button" onClick={handleLogout} className="menu-item">
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
+          <motion.button
+            whileTap={{ scale: 0.96 }}
+            onClick={handleAddTransaction}
+            className="btn-primary btn-compact"
+            type="button"
+          >
+            <PlusCircle className="h-4 w-4" />
+            Tambah Transaksi
+          </motion.button>
         </div>
+      </div>
 
         <motion.button
           whileTap={{ scale: 0.95 }}

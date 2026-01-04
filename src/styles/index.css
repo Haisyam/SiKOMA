@@ -113,6 +113,14 @@
     @apply inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-transparent px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-white/25 hover:bg-white/5;
   }
 
+  .btn-compact {
+    @apply px-4 py-2 text-xs;
+  }
+
+  .menu-item {
+    @apply flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10;
+  }
+
   .badge {
     @apply inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-200;
   }
@@ -188,6 +196,14 @@
 
 :root[data-theme="light"] .btn-ghost:hover,
 :root[data-theme="light"] .btn-secondary:hover {
+  background-color: rgba(15, 23, 42, 0.08);
+}
+
+:root[data-theme="light"] .menu-item {
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .menu-item:hover {
   background-color: rgba(15, 23, 42, 0.08);
 }
 
