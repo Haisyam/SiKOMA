@@ -1,4 +1,11 @@
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { supabase } from "./lib/supabase.js";
@@ -44,6 +51,23 @@ function AnimatedRoutes({ session, loading }) {
   );
 }
 
+function RecoveryRedirector() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash;
+    if (!hash) return;
+    const params = new URLSearchParams(hash.replace(/^#/, ""));
+    if (params.get("type") !== "recovery") return;
+    if (location.pathname === "/reset-password") return;
+    navigate(`/reset-password${hash}`, { replace: true });
+  }, [location.pathname, navigate]);
+
+  return null;
+}
+
 export default function AppRouter() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -73,6 +97,7 @@ export default function AppRouter() {
   return (
     <ThemeProvider>
       <BrowserRouter>
+        <RecoveryRedirector />
         {loading ? <LoadingScreen /> : <AnimatedRoutes session={session} loading={loading} />}
       </BrowserRouter>
     </ThemeProvider>
