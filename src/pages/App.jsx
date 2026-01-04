@@ -455,7 +455,20 @@ export default function AppPage({ session }) {
     });
 
     if (!result.isConfirmed) return;
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut({ scope: "local" });
+    if (error) {
+      await swalBase.fire({
+        icon: "error",
+        title: "Gagal logout",
+        text: error.message,
+      });
+      return;
+    }
+
+    toast.fire({ icon: "success", title: "Logout berhasil" });
+    setTimeout(() => {
+      window.location.assign("/login");
+    }, 400);
   };
 
   const listVariants = {
