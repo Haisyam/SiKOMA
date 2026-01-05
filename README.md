@@ -1,41 +1,54 @@
-# SIKOMA — Sistem Informasi Keuangan Mahasiswa
+# SIKOMA - Sistem Informasi Keuangan Mahasiswa
 
-Aplikasi web untuk mahasiswa (terutama anak kos) yang ingin mencatat pemasukan dan pengeluaran harian secara cepat, simpel, dan visual. Dilengkapi autentikasi Supabase, dashboard finansial, kategori, grafik, serta UI modern dengan glassmorphism dan animasi halus.
+SIKOMA adalah web app untuk mahasiswa yang ingin mencatat pemasukan dan pengeluaran harian secara cepat, rapi, dan visual. Dilengkapi autentikasi Supabase, dashboard finansial, rekap mingguan/bulanan, export laporan, dan admin panel aman.
 
 ## Fitur Utama
 
-- Auth (Register/Login) + verifikasi email
+- Auth: Register/Login + verifikasi email
 - Reset password via email
-- Dashboard ringkas: saldo, pemasukan bulan ini, pengeluaran bulan ini, sisa uang
+- Dashboard keuangan: saldo, pemasukan bulan ini, pengeluaran bulan ini, sisa uang
 - CRUD transaksi (income/expense)
 - Filter transaksi: tipe, kategori, tanggal (hari ini/bulan ini/custom), pencarian
+- Rekap mingguan/bulanan (mengikuti filter aktif)
+- Export laporan ke .xlsx dan .pdf
 - Grafik: pie (pengeluaran per kategori), bar (pengeluaran harian)
 - Kategori terpisah antara income dan expense
-- SweetAlert2 custom theme untuk toast dan confirm
+- SweetAlert2 custom theme
 - Light/Dark mode
-- Responsive, mobile-first
+- Admin panel: daftar user + semua transaksi (pagination user)
 
 ## Teknologi
 
 - Vite + React (JSX)
 - TailwindCSS
-- Supabase (Auth + Database + RLS)
+- Supabase (Auth + Database + RLS + Edge Functions)
 - SweetAlert2
 - Framer Motion
 - Recharts
+- xlsx, jsPDF
 
-## Struktur Folder
+## Struktur Folder (ringkas)
 
 ```
 CatatKeuangan/
 ├── public/
 │   ├── logo.svg
+│   ├── logo.png
 │   ├── og-image.svg
 │   ├── robots.txt
 │   ├── sitemap.xml
 │   └── site.webmanifest
+├── supabase/
+│   └── functions/
+│       ├── _shared/
+│       │   └── cors.ts
+│       ├── admin-users/
+│       │   └── index.ts
+│       └── admin-transactions/
+│           └── index.ts
 ├── src/
 │   ├── components/
+│   │   ├── AdminRoute.jsx
 │   │   ├── CategoryModal.jsx
 │   │   ├── Charts.jsx
 │   │   ├── DashboardSkeleton.jsx
@@ -48,11 +61,13 @@ CatatKeuangan/
 │   │   ├── TransactionItem.jsx
 │   │   └── TransactionSkeleton.jsx
 │   ├── lib/
+│   │   ├── admin.js
 │   │   ├── alerts.js
 │   │   ├── categoryIcons.js
 │   │   ├── supabase.js
 │   │   └── theme.jsx
 │   ├── pages/
+│   │   ├── Admin.jsx
 │   │   ├── App.jsx
 │   │   ├── ForgotPassword.jsx
 │   │   ├── Login.jsx
@@ -63,8 +78,7 @@ CatatKeuangan/
 │   ├── AppRouter.jsx
 │   ├── index.css
 │   ├── main.jsx
-│   └── styles/
-│       └── index.css
+│   └── styles/index.css
 ├── index.html
 ├── package.json
 └── vite.config.js
@@ -72,27 +86,22 @@ CatatKeuangan/
 
 ## Alur Aplikasi
 
-1. **Register** dengan email & password.
-2. **Verifikasi email** via link yang dikirim Supabase.
-3. **Login** menggunakan akun terverifikasi.
-4. Masuk ke **Dashboard** untuk melihat ringkasan, grafik, dan daftar transaksi.
-5. **Tambah/Edit/Hapus** transaksi.
-6. **Reset password** bisa dari dashboard (atau halaman lupa password).
+1. User register dengan email & password.
+2. User verifikasi email dari inbox.
+3. User login dan masuk ke dashboard.
+4. User menambah, mengedit, dan menghapus transaksi.
+5. User melihat rekap mingguan/bulanan dan export laporan.
+6. Admin (super admin) dapat melihat user + transaksi semua user.
 
 ## Setup & Instalasi
 
-### 1) Install Dependencies
+### 1) Install dependencies
 
 ```bash
 npm install
 ```
 
-### 2) Buat Project Supabase
-
-- Buat project baru di Supabase.
-- Ambil **Project URL** dan **Anon Public Key**.
-
-### 3) Konfigurasi Environment
+### 2) Konfigurasi environment (frontend)
 
 Buat file `.env` di root:
 
@@ -102,22 +111,21 @@ VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
 VITE_ADMIN_EMAILS=admin1@email.com,admin2@email.com
 ```
 
-### 4) Konfigurasi Auth Redirect (Supabase)
+### 3) Supabase - Pengaturan Auth
 
 Di Supabase Dashboard:
-- **Authentication → URL Configuration**
-- Set:
-  - Site URL: `http://localhost:5173`
-  - Redirect URLs:
-    - `http://localhost:5173/login`
-    - `http://localhost:5173/reset-password`
 
-Jika production:
-- Ganti ke domain kamu, misalnya:
-  - `https://sikoma.vercel.app/login`
-  - `https://sikoma.vercel.app/reset-password`
+**Authentication -> URL Configuration**
+- Site URL: `http://localhost:5173`
+- Redirect URLs:
+  - `http://localhost:5173/login`
+  - `http://localhost:5173/reset-password`
 
-### 5) Jalankan SQL Schema
+Jika production, ganti ke domain kamu:
+- `https://sikoma.vercel.app/login`
+- `https://sikoma.vercel.app/reset-password`
+
+### 4) Supabase - SQL Schema + RLS
 
 Jalankan SQL berikut di **Supabase SQL Editor**:
 
@@ -162,6 +170,11 @@ drop policy if exists "categories_insert_own" on public.categories;
 drop policy if exists "categories_update_own" on public.categories;
 drop policy if exists "categories_delete_own" on public.categories;
 
+drop policy if exists "transactions_select_own" on public.transactions;
+drop policy if exists "transactions_insert_own" on public.transactions;
+drop policy if exists "transactions_update_own" on public.transactions;
+drop policy if exists "transactions_delete_own" on public.transactions;
+
 create policy "categories_select_own"
   on public.categories for select
   using (auth.uid() = user_id);
@@ -178,12 +191,6 @@ create policy "categories_update_own"
 create policy "categories_delete_own"
   on public.categories for delete
   using (auth.uid() = user_id);
-
-
-drop policy if exists "transactions_select_own" on public.transactions;
-drop policy if exists "transactions_insert_own" on public.transactions;
-drop policy if exists "transactions_update_own" on public.transactions;
-drop policy if exists "transactions_delete_own" on public.transactions;
 
 create policy "transactions_select_own"
   on public.transactions for select
@@ -214,7 +221,7 @@ create policy "transactions_delete_own"
   on public.transactions for delete
   using (auth.uid() = user_id);
 
--- Seed kategori default (opsional, untuk user yang sudah ada)
+-- Seed kategori default (opsional)
 insert into public.categories (user_id, name, type, color, icon)
 select u.id, 'Ngopi', 'expense', '#facc15', 'Coffee'
 from auth.users u
@@ -244,7 +251,7 @@ left join public.categories c
 where c.id is null;
 ```
 
-### 6) Jalankan Project
+### 5) Jalankan project
 
 ```bash
 npm run dev
@@ -254,53 +261,63 @@ Akses di `http://localhost:5173`.
 
 ## Admin Panel (Super Admin)
 
-Admin panel aman menggunakan **Supabase Edge Functions** (server-side). Hanya email yang ada di allowlist yang bisa mengakses.
+Admin panel menggunakan **Supabase Edge Functions** dan allowlist email admin.
 
-### 1) Set Secrets untuk Edge Function
+### A) Set secrets untuk Edge Functions
 
-Jalankan via Supabase CLI:
+Supabase Dashboard -> Edge Functions -> Secrets:
 
-```bash
-supabase secrets set SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
-supabase secrets set ADMIN_EMAILS=admin1@email.com,admin2@email.com
+```
+SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
+ADMIN_EMAILS=admin1@email.com,admin2@email.com
 ```
 
-Catatan: Supabase **melarang** membuat secret dengan prefix `SUPABASE_`. `SUPABASE_URL` sudah tersedia otomatis di Edge Functions, jadi cukup set `SERVICE_ROLE_KEY` dan `ADMIN_EMAILS`.
+Catatan: Supabase melarang secret dengan prefix `SUPABASE_`. `SUPABASE_URL` dan `SUPABASE_ANON_KEY` sudah disediakan otomatis oleh platform.
 
-### 2) Deploy Functions
+### B) Deploy Edge Functions
 
+Opsi 1 (CLI, butuh Docker):
 ```bash
 supabase functions deploy admin-users
 supabase functions deploy admin-transactions
 ```
 
-### 3) Akses Admin
+Opsi 2 (Dashboard):
+- Buat function baru: `admin-users`, `admin-transactions`.
+- Paste kode dari `supabase/functions/*`.
+- Jika deploy lewat Dashboard, pastikan import `_shared/cors.ts` disatukan (inline) atau gunakan versi single-file.
 
-Buka `https://your-domain.com/admin` setelah login dengan email admin.
+### C) Nonaktifkan Verify JWT
+
+Di Supabase Dashboard -> Edge Functions -> Settings:
+- Disable **Verify JWT** untuk `admin-users` dan `admin-transactions`.
+- Verifikasi tetap dilakukan di kode (getUser + allowlist email).
+
+### D) Akses admin
+
+Login dengan email admin, buka:
+```
+https://your-domain.com/admin
+```
 
 ## Kustomisasi Branding / SEO
-
-Ganti domain dan metadata di file berikut jika dibutuhkan:
 
 - `index.html` (title, meta, og tags, canonical)
 - `public/robots.txt`
 - `public/sitemap.xml`
-
-Logo dan OG image:
-- `public/logo.svg`
-- `public/og-image.svg`
+- Logo dan OG image: `public/logo.svg`, `public/logo.png`, `public/og-image.svg`
 
 ## Catatan Penting
 
-- Email verifikasi dan reset password akan menggunakan URL redirect yang kamu set di Supabase.
-- Default kategori untuk user baru dibuat otomatis oleh aplikasi (juga ada seed opsional di SQL).
-- Jika ingin menambah kategori icon, edit di `src/lib/categoryIcons.js`.
+- Pastikan `.env` tidak di-commit ke git.
+- Jika admin panel tidak muncul di production, set `VITE_ADMIN_EMAILS` di Vercel/hosting env lalu redeploy.
+- Export laporan menggunakan `xlsx` dan `jsPDF`.
 
 ## Scripts
 
-- `npm run dev` — development
-- `npm run build` — build production
-- `npm run preview` — preview build
+- `npm run dev` - development
+- `npm run build` - build production
+- `npm run preview` - preview build
 
 ## License
 
