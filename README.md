@@ -297,7 +297,7 @@ Di Supabase Dashboard -> Edge Functions -> Settings:
 
 Login dengan email admin, buka:
 ```
-https://your-domain.com/admin
+https://sikoma.vercek.app/admin
 ```
 
 ## Kustomisasi Branding / SEO
